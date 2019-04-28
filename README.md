@@ -1,8 +1,270 @@
 # SPRING2019TIDYVERSE: 
-# dplyr & ggplot2: Democratic Candidate Endorsements, Stephen Jones
+# dplyr & ggplot2: Democratic Candidate Endorsements
+# Stephen Jones
 CUNY DATA 607 Spring 2019 Tidyverse recipes
 
 GitHub repository:  https://github.com/acatlin/SPRING2019TIDYVERSE
 
 FiveThirtyEight.com datasets:  https://data.fivethirtyeight.com/
 
+*Markdown begins here*
+---
+title: "TidyVerse: FiveThirtyEight Democratic Endorsements"
+author:
+- Stephen Jones
+date: "April 20, 2019"
+output:
+  rmdformats::readthedown:
+    gallery: no
+    highlight: tango
+    lightbox: yes
+    self_contained: yes
+    thumbnails: no
+    code_folding: hide
+  html_document:
+    df_print: paged
+---  
+
+#Data Selection  
+
+Data source: https://projects.fivethirtyeight.com/2020-endorsements/democratic-primary/  
+
+Data were downloaded from fivethirtyeight.com's post "The 2020 Endorsement Primary", last updated April 26, 2019. As the campaigns continue and primaries begin, endorsements by elected officials and other prominent individuals may indicate how contested the primaries will be and how long the selection process will take.  
+
+I plan to make use of `ggplot2` to examine these data.  
+
+***
+
+#Preparation: `dplyr`  
+
+##Preliminary cleaning  
+
+Data were uploaded to GitHub for ease of access. Preliminary cleaning was accomplished with `dplyr` to create a dataset consisting of senators and representatives who've endorsed a candidate.  
+
++ `read_csv` reads the file from GitHub
++ `mutate` recodes NAs in variable "endorsee" as "undeclared"
++ `select` omits unnecessary columns
++ `filter` filters the dataset to include only senators and representatives
+
+```{r message=FALSE,warning=FALSE}
+
+rm(list=ls())
+library(tidyverse)
+
+#use read_csv from readr
+endorse<-read_csv("https://raw.githubusercontent.com/sigmasigmaiota/elections/master/endorsements-2020.csv")
+
+#replace NA with "undeclared" using mutate from dplyr
+#remove unnecessary columns with select, from dplyr
+#filter senators and representatives, from dplyr
+senrep<-endorse%>%
+  mutate(endorsee=ifelse(is.na(endorsee),"undeclared",endorsee))%>%
+  select(position,endorsee)%>%
+  filter(position=="senator"|position=="representative")
+
+```
+***
+
+#Visualization: `ggplot2`  
+
+##Barplot: `geom_bar`  
+
+`qqplot2` requires a correctly tidied dataset, a `geom`, and a coordinate system; to function, aesthetic properties must be set for the `geom`. In the first plot below, `aes` is defined by the dataset `senrep`, with the `fill` command specifying that the color of each bar in the plot should correspond to each candidate (`endorsee`).  
+
++ `geom_bar` supplies the neccessary command for a bar plot
++ `facet_grid()` creates multiple plots differentiated by `position`, or senator vs representative
++ `coord_flip()` rotates the plots 90 degrees
++ `theme_bw()` removes background color, which is gray by default
++ `theme(axis.text.x = element_text())` rotates labels on the x-axis 90 degrees  
+
+
+```{r message=FALSE,warning=FALSE,fig.align='center',fig.fullwidth=TRUE}
+
+ggplot(senrep, aes(endorsee,fill=endorsee))+
+  geom_bar()+
+  facet_grid(~position)+
+  coord_flip()+
+  theme_bw()+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+```
+
+More cleaning will remove undeclared endorsers and make the plot more informative.  
+
++ `geom_text()` adds value to each bar
++ `aes(label=..count..)` sets value to be displayed as the count found in the dataset
++ `stat="count"` calculates the count value called by the aesthetic
++ `position=position_stack(0.5)` sets the position of the value text within the bar at half height
+
+```{r message=FALSE,warning=FALSE,fig.align='center',fig.fullwidth=TRUE}
+
+#remove undeclared endorsers, dplyr
+senreps<-senrep%>%
+  filter(endorsee!="undeclared")
+
+#plot, adding value labels to each bar with geom_text and vjust
+ggplot(senreps, aes(endorsee,fill=endorsee))+
+  geom_bar()+
+  facet_grid(~position)+
+  coord_flip()+
+  theme_bw()+
+  geom_text(aes(label=..count..),stat="count",position=position_stack(0.5))
+
+```
+Biden and Booker lead in endorsements from Representatives and Senators, followed by Harris.  
+
+##Further cleaning  
+
+Further cleaning will create a dataset that examines endorsements per month. `dplyr` can be used to aggregate by group; first, we'll create month variable using `lubridate` from `tidyverse`, then use `group_by` and `summarise` to calculate frequencies of each endorsement.  
+
+```{r message=FALSE, warning=FALSE,fig.fullwidth=TRUE}
+
+#lubridate is used to handle dates
+library(lubridate)
+
+#three variables are created: year, month and day
+endorse<-endorse%>%
+  mutate(date = ymd(date))%>%
+  mutate_at(vars(date),
+            funs(year, month, day))
+
+
+#filter out "undeclared" and endorsements from years other than 2019, from dplyr
+monthly<-endorse%>%
+  filter(endorsee!="undeclared" & year == 2019)
+
+```  
+***
+
+With data properly formatted, `ggplot` can plot a histogram.  
+
+##Histogram: `geom_hist`  
+
++ `geom_histogram()` specifies type of plot
++ `alpha=` specifies transparency on a scale from 0 to 1
++ `aes(y=..count..,fill=..count..)` assigns color to count values with shades of blue as default
++ `scale_fill_gradient()` specifies low and high color identities
++ `labs()` customizes labels
++ `theme_classic()` eliminates grid and background color
++ `legend.position='none'` hides the legend, which proved superfluous for this plot
+
+```{r message=FALSE,warning=FALSE,fig.align="center",fig.fullwidth=TRUE}
+
+ggplot(monthly,aes(x=date))+
+  geom_histogram(aes(y=..count..,fill=..count..,alpha=.2))+
+  scale_fill_gradient("Count", low="blue", high="red")+
+  labs(title="Democrat Candidate Endorsements by Date, January - April")+
+  theme_classic()+
+  theme(legend.position="none")
+
+
+```
+The frequency of endorsements have peaked as the candidates announce their intention to run.  
+
+***
+
+##Dot plot: `geom_dotplot`  
+
+Dot plots offer an alternative to histograms and bar plots; given their versatility they can expose hidden relationships in data.  
+
++ `geom_dotplot` specifies the plot
++ `method = "histodot"` binwidth specifies a fixed bin width; for "dotdensity", `binwidth` sets a maximum
++ `binwidth = ` specifies a fixed bin width with method "histodot"
++ `stackdir = `specifies stack direction; other values are "up", "down", or "centerwhole"
++ `stackratio = ` specifies distance between dots in stacks, scaled from 0 to 1.
++ `dotsize = ` specifies dot size
+
+```{r message=FALSE, warning=FALSE, fig.align="center", fig.fullwidth=TRUE}
+
+ggplot(monthly,aes(x=date))+
+  geom_dotplot(method="histodot",
+               binwidth=3,
+               stackdir="center",
+               stackratio = .9,
+               aes(color="none",
+                   fill=..count..,
+                   alpha=.5),
+               dotsize = .90)+
+  scale_fill_gradient("Count", low="green", high="red")+
+  labs(title="Democrat Candidate Endorsements by Date, January - April")+
+  theme_classic()+
+  theme(legend.position="none")+
+  scale_y_continuous(NULL,breaks=NULL)
+
+```  
+Most endorsements were made in February; the burst of endorsements in that month coincide with Booker's announcement, which seems to contrast with his presence in news cycles.  
+
+***
+
+Another plot can be derived from the same data by defining groups as "position"; in this plot each group of endorsers are plotted separately. As a special note, the y-axis is unable to reverse with dates; May is at the top and January at the bottom.  
+
++ `aex(x=factor(position), y = as.Date(date))` redundant conversion ensures date formatting  
++ `origin = ` specifies the origin for date variables
++ `binaxis = "y"` rotates the bin axis
++ `fill = ` is set to "position" to color based on position
++ `text = element_text(size=10)` sets axis tick-mark font size
++ `xlab =` or `ylab = ` resets label text
+
+```{r message=FALSE, warning=FALSE, fig.align="center", fig.fullwidth=TRUE}
+
+#ensure conversion to date
+monthly$date<-ymd(monthly$date)
+
+ggplot(monthly,aes(x=factor(position), y = as.Date(date)))+
+  geom_dotplot(origin=as.Date('2019-01-01'),
+               method="histodot",
+               binwidth=3,
+               binaxis = "y",
+               stackdir="center",
+               stackratio = .9,
+               aes(color="none",
+                   fill=position,
+                   alpha=.5),
+               dotsize = 1)+
+  labs(title="Democrat Candidate Endorsements by Date, January - April")+
+  theme_classic()+
+  theme(legend.position="none")+
+  theme(text = element_text(size=10),
+        axis.text.x = element_text(angle = 45, hjust = 1))+
+  xlab("position")+
+  ylab("date")
+
+```  
+
+From this plot it appears that most of the endorsements have come from DNC members and members of Congress; mayors seem anxious to declare their endorsements more frequently than Senators, which is logical.  
+
+***
+
+Yet another view, this time with candidates on the x-axis.  
+
++ `x=factor(endorsee)` groups by candidate
++ `fill=endorsee` also groups by candidate
+
+```{r message=FALSE, warning=FALSE, fig.align="center", fig.fullwidth=TRUE}
+
+ggplot(monthly,aes(x=factor(endorsee), y = as.Date(date)))+
+  geom_dotplot(origin=as.Date('2019-01-01'),
+               method="histodot",
+               binwidth=3,
+               binaxis = "y",
+               stackdir="center",
+               stackratio = .5,
+               aes(color="none",
+                   fill=endorsee,
+                   alpha=.1),
+               dotsize = 2)+
+  labs(title="Democrat Candidate Endorsements by Date, January - April")+
+  theme_classic()+
+  theme(legend.position="none")+
+  theme(text = element_text(size=10),
+        axis.text.x = element_text(angle = 45, hjust = 1))+
+  xlab("position")+
+  ylab("date")
+
+```  
+
+One interesting fact exposed in this plot is the endorsement Biden received long before he entered the race. Additionally, endorsements for Klobuchar, Sanders, Booker and Biden were reported simultaneously by several individuals, while endorsements for Harris seem to have trickled in over the span of two months.  
+
+#Conclusion  
+
+It will be an interesting year for the candidates; endorsements as listed here are no indication of popularity with the electorate. Media endorsements will have an additional effect. More data is needed for a thorough measure of sentiment, but ultimately time will tell.
