@@ -70,3 +70,10 @@ I decided to do my tidyverse assignment on the tibbles package. The rmarkdown co
 
 ### Isabel R.
 I will focus on how to use the `Nest` and `Unnest` functions utilizing data from *FiveThirtyEight*,"How Popular Is Donald Trump?" from the trump-approval-ratings data set. The rmarkdown code has been posted to this repository and the html file can be found here: http://rpubs.com/IsabelR/TidyVerseAssignment
+
+### Stephen Jones
+#### dplyr & ggplot2: Democratic Candidate Endorsements
+
+I used various functions of `ggplot2` to anayze/visualize data downloaded from FiveThirtyEight.com (https://data.fivethirtyeight.com/), with a focus on options for bar chart and histogram geoms. `dplyr` and other packages were used for preliminary cleaning.  
+
+RPubs link: http://rpubs.com/sigmasigmaiota/491153
