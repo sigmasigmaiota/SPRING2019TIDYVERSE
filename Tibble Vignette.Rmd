@@ -166,3 +166,110 @@ There are a few topics I did not cover in this vignette that I think would be a 
 - Subsetting methods with tibbles
 
 
+
+#Tidyverse, Part II, added by Stephen Jones.  
+
+##Subsetting methods with tibbles  
+
+Subsetting tibbles is accomplished using methods developed to subset dataframes; `$`, `[[`, or `[` may be used to call columns, rows, or cells.  
+
+`which` may be implemented to subset on specific values:  
+
+```{r message=FALSE,warning=FALSE}
+
+#create a tibble of Engineering majors
+WSeng_tibble <- women_stem_tibble[which(women_stem_tibble$Major_category == "Engineering"),] 
+
+head(WSeng_tibble,5)
+
+```  
+
+Most commands are compatible with tibbles. Below, `grepl` is used to create a tibble of biological or biomedical majors.  
+
+
+```{r message=FALSE,warning=FALSE}
+
+field<-c("BIOLOGICAL","BIOMEDICAL")
+
+#keep first five rows, columns 2 through 7
+WSbio_tibble <- subset(women_stem_tibble, grepl(paste(field, collapse= "|"), women_stem_tibble$Major))
+
+
+```
+
+Rows and columns may be called by number:  
+
+```{r message=FALSE,warning=FALSE}
+
+#keep first five rows, columns 2 through 7
+WSfirstfive_tibble <- women_stem_tibble[1:5,2:7] 
+
+head(WSfirstfive_tibble,5)
+
+```
+
+Tibbles may be subset by detecting a substring with column names:  
+
+
+```{r message=FALSE,warning=FALSE}
+
+library(stringr)
+#subset based on appearance of punctuation in column name using stringr
+WSpunc_tibble<-women_stem_tibble[str_detect(names(women_stem_tibble), "[[:punct:]]")]
+
+head(WSpunc_tibble,5)
+
+```
+Other options that may be used for subsetting:  
+
+```{r message=TRUE,warning=TRUE}
+
+# Subsetting single columns:
+women_stem_tibble[, "Major_code"]
+```
+
+`drop=TRUE` coerces the result to a vector if a single column is called or coerces to a list if a single row is called; otherwise, the result is returned with the lowest possible dimension. The code chunk below returns a list.  
+
+
+```{r message=TRUE,warning=TRUE}
+women_stem_tibble[, "Major_code", drop = TRUE]
+
+```
+
+The commands in the following code chunk return lists:
+
+```{r message=FALSE,warning=FALSE}
+# Subset single rows with the drop:
+women_stem_tibble[1, , drop = TRUE]
+
+as.list(women_stem_tibble[1, ])
+
+```
+
+Tibbles are returned when `[` is used to specify columns. `[[` returns an atomic vector.  
+
+
+```{r message=FALSE,warning=FALSE}
+#Other options that return lists:
+women_stem_tibble[1, ]
+
+women_stem_tibble[1, c("Major", "Major_code")]
+
+women_stem_tibble[, c("Major", "Major_code")]
+
+women_stem_tibble[c("Major", "Major_code")]
+
+women_stem_tibble["Major_code"]
+
+
+#returns an atomic vector.
+women_stem_tibble[["Major_code"]]
+
+
+```
+
+
+
+
+
+
